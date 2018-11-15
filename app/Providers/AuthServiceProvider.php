@@ -37,9 +37,10 @@ class AuthServiceProvider extends ServiceProvider
         });
         */
         // jwt realisation
+
         $this->app['auth']->viaRequest('api', function ($request)
         {
-            return User::whereEmail($request->input('email'))->first();
+            return User::whereName($request->input('name'))->first();
         });
 
     }

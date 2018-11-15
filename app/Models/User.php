@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\Authenticatable;
+use Laravel\Lumen\Auth\Authorizable;
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 /**
  * @property int $id
  * @property string $username
@@ -12,8 +16,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $email
  * @property string $user_role
  */
-class User extends Model
+class User extends Model implements JWTSubject, AuthenticatableContract, AuthorizableContract
 {
+    use Authenticatable, Authorizable;
     /**
      * The table associated with the model.
      * 
@@ -31,8 +36,18 @@ class User extends Model
     /**
      * @var array
      */
-    protected $fillable = ['id', 'username', 'v_shtate', 'glavniy', 'email', 'user_role'];
-
+    protected $fillable = ['id', 'name', 'v_shtate', 'glavniy', 'email', 'user_role'];
+    protected $hidden = [
+        'password',
+    ];
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
 
     public function clients()
     {

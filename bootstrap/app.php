@@ -60,19 +60,20 @@ $app->singleton(
 |
 */
 
-// $app->middleware([
-//    App\Http\Middleware\ExampleMiddleware::class
-// ]);
-
 // $app->routeMiddleware([
 //     'auth' => App\Http\Middleware\Authenticate::class,
 // ]);
-    
+$app->routeMiddleware([
+    'auth' => App\Http\Middleware\Authenticate::class,
+   // 'jwt' => \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
+ ]);
+
 $app->middleware([
     App\Http\Middleware\CorsMiddleware::class
  ]);
 //$app->configure('debugbar');
 $app->configure('dompdf');
+$app->configure('auth');
 
 /*
 |--------------------------------------------------------------------------
@@ -93,6 +94,7 @@ $app->register(Maatwebsite\Excel\ExcelServiceProvider::class);
 $app->register(Intervention\Image\ImageServiceProvider::class);
 $app->register(\Barryvdh\DomPDF\ServiceProvider::class);
 $app->register(Jenssegers\Date\DateServiceProvider::class);
+$app->register(\Tymon\JWTAuth\Providers\LumenServiceProvider::class);
 
 
 
