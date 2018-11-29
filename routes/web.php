@@ -17,28 +17,47 @@
 $router->get('/', function () use ($router) {
     return $router->app->version();
 });
+$router->get('echo', ['uses' => 'DatatableController@userdata']);
+$router->get('/auth/login', 'AuthController@postLogin');
 $router->post('/auth/login', 'AuthController@postLogin');
 $router->group(['middleware' => 'auth:api'], function($router)
 {
-    $router->get('echo', function() {
-        return response()->json([
-            'message' => 'Hello World!',
-        ]);
-    });
+
+    //$router->get('echo', ['uses' => 'DatatableController@userdata']);
 });
 
 $router->group(['prefix' => 'api'], function () use ($router) {
+   $router->group(['middleware' => 'auth:api'], function($router){
+        $router->get('/user/current',  ['uses' => 'Permissions\UserController@currentUser']);
+   });
   $router->get('prospects',  ['uses' => 'ProspectController@showAllProspects']);
   $router->get('prospects/{id}', ['uses' => 'ProspectController@showOneProspect']);
   $router->post('prospects', ['uses' => 'ProspectController@create']);
   $router->delete('prospects/{id}', ['uses' => 'ProspectController@delete']);
-  $router->put('prospects/{id}', ['uses' => 'ProspectController@update']);
+  $router->put('prospescts/{id}', ['uses' => 'ProspectController@update']);
   $router->get('manager/{id}/prospects', ['uses' => 'ManagersController@searchProspects']);
   $router->get('printInvoice', ['uses' => 'CertificatesController@certificateTemplates']);
-
+  $router->group(['prefix' => 'admin', 'as' => 'admin.'], function () use ($router) {
+      // permissions methods TODO: update / delete
+    $router->get('permissions', ['uses' => 'Permissions\PermissionController@index']);
+    $router->get('permission/{id}', ['uses' => 'Permissions\PermissionController@findOne']);
+    $router->post('permission', ['uses' => 'Permissions\PermissionController@create']);
+    // roles methods TODO: update / delete
+    $router->get('roles', ['uses' => 'Permissions\RoleController@index']);
+    $router->get('role/{id}', ['uses' => 'Permissions\RoleController@findOne']);
+    $router->post('role', ['uses' => 'Permissions\RoleController@create']);
+    // users methods TODO: update / delete
+    
+    $router->get('users', ['middleware' => 'role:admin,managers/edit', 'uses' => 'Permissions\UserController@index']);
+    $router->get('user/{id}', ['uses' => 'Permissions\UserController@findOne']);
+    $router->post('user', ['uses' => 'Permissions\UserController@create']);
+  });
   $router->get('email', function ()  {
     return view('mail', ['theme' => 'Перезакрепление']);
 });
+
+
+
 
 $router->get('certificate', ['uses' => 'CertificatesController@certificate']);
 $router->get('certificates', ['uses' => 'CertificatesController@index']);

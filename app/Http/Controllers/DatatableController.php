@@ -39,6 +39,9 @@ class DatatableController extends Controller {
             return $e;
         }
     }
+    public  function userdata(Request $request) {
+        return response()->json($request->user());
+    }
     private function getRows($table) {
         return true;
     }

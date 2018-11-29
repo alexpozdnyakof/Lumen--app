@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\JWTAuth;
-
+use Illuminate\Support\Facades\Log;
 class AuthController extends Controller
 {
     /**
@@ -18,17 +18,18 @@ class AuthController extends Controller
         $this->jwt = $jwt;
     }
 
+
+
     public function postLogin(Request $request)
     {
         $this->validate($request, [
-            'name' => 'required'
+            'rb' => 'required'
             //'email'    => 'required|email|max:255',
             //'password' => 'required',
         ]);
-
         try {
             // if (! $token = $this->jwt->attempt($request->only('email', 'password'))) {
-            if (! $token = $this->jwt->attempt($request->only('name'))) {
+            if (! $token = $this->jwt->attempt($request->only('rb'))) {
                 return response()->json(['user_not_found'], 404);
             }
 
