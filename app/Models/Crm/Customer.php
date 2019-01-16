@@ -115,9 +115,9 @@ class Customer extends Model
      */
     protected $primaryKey = 'client_id';
     protected $with = [
-        'groups',
-        'managers',
-        'managerPivot'
+        //'groups',
+        //'managers',
+        //'managerPivot'
     ];
 
     /**
@@ -227,14 +227,17 @@ class Customer extends Model
         'kanal_privlecheniya_change_time', 
         'siebelid'
     ];
- 
+
     public function managers() {
         return $this->belongsToMany(Manager::class,'crm_client_managers', 'client_id', 'uid');
     }
     public function managerPivot(){
-        return $this->hasMany(ManagerClientPivot::class, 'client_id', 'client_id');
+         return $this->hasMany(ManagerClientPivot::class, 'client_id', 'client_id');
     }
     public function groups() {
         return $this->belongsToMany(CustomerGroup::class,'crm_spiski_clientov', 'client_id', 'spisok_id')->where('crm_spiski.business_id', '=', '1');
     }
+    public function tasks() {
+        return $this->hasMany(Task::class, 'client_id',  'client_id');
+     }
 }

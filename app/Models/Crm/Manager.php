@@ -85,7 +85,6 @@ class Manager extends Model
       //return $this->hasOne(User::class, 'glavnyi', 'ФИО');
    }
 */
-  
 
     public function customers(){
       return $this->belongsToMany(Customer::class, 'crm_client_managers', 'uid', 'client_id')->whereIs_active(1);
@@ -93,11 +92,15 @@ class Manager extends Model
     public function groups(){
       return $this->belongsToMany(CustomerGroupPivot::class, 'crm_client_managers', 'uid', 'client_id', 'counter')->whereNull('otrabotan_a_id');
    }
-
-    public function roles() {
+   public function roles() {
       return $this->hasMany(Role::class,'lumen_users_roles', 'user_id', 'role_id');
-    }
-
+   }
+   public function tasks() {
+      return $this->hasMany(Task::class, 'creator_uid',  'counter');
+   }
+   public function tasksDone() {
+      return $this->hasMany(Task::class, 'executor_uid',  'counter');
+   }
 }
 
 

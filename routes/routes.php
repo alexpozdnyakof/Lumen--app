@@ -31,6 +31,7 @@
 		$router->group(['prefix' => 'crm'], function () use ($router) {
 			include_once 'api/v1/crm/customers.php';
 			include_once 'api/v1/crm/managers.php';
+			include_once 'api/v1/crm/tasks.php';
 		});
 		/*---loans routes---------------------------------------*/
 		$router->group(['prefix' => 'loans'], function () use ($router) {

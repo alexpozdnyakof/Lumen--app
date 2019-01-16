@@ -24,10 +24,8 @@ use Illuminate\Support\Facades\DB;
 
 
 class ManagerController extends Controller {
-    public function __construct()
-    {
+    public function __construct() { }
 
-    }
     public function index(Request $request){
         try {
            if ($request->get('branch')) {
@@ -50,98 +48,28 @@ class ManagerController extends Controller {
         return response()->json(Manager::findOrFail($id));
     }
 
-    public function findCustomers($id, Request $request){
-        return response()->json(CustomersListResource::collection(Manager::findOrFail($id)->customers()->get()));
-    }
-
-
-    public function findGroupCustomers($id,$group, Request $request){
-        try {
-           $customers = CustomerGroup::with(['customers' => function($query) use ($id){
-            $query->whereHas('managerPivot', function($q){
-                $q->where('is_active', 1);
-            });
-             $query->whereHas('managers', function($q) use ($id){
-                $q->whereCounter($id);
-            });
-           }])->findOrFail($group);
-           return response()->json(CustomersListResource::collection($customers->customers));
-        }
-        catch (Exception $e) {
-            report($e);
-            return $e;
-        }
-    }
-
-    public function findGroups($id, Request $request){
-        try {
-            $groups = Manager::with(['groups'])->findOrFail($id);
-            //return $groups->groups;
-            $groupResults = [];
-            $groupsMap = $groups->groups
-            ->filter(function($item, $key) {
-                Log::debug($item->group->business_id);
-                return intval($item->group->business_id) === 1;
-            })
-            ->mapToGroups(function ($item, $key) {
-                Log::debug($item);
-                return [$item->spisok_id =>  array('id' => $item->spisok_id, 'name' => $item->group->spisok_name, 'description' => $item->group->spisok_opisanie, 'valuation' => $item->group->spisok_ball)];
-            });
-
-            foreach($groupsMap as $group){
-                Log::debug($group);
-                $groupResults[] = ['id' => $group[0]['id'], 'name' => $group[0]['name'],  'description' => $group[0]['description'], 'valuation' => intval($group[0]['valuation']), 'count'=> count($group)];
-            }
-            return $groupResults;
-            $groupResult = collect($groupResults);
-          
-            if ($request->get('sorted')) {
-                if($request->get('order')=='desc'){
-                    return $groupResult->sortByDesc($request->get('sorted'));
-                }
-                return $groupResult->sortBy($request->get('sorted'));
-            }
-            return $groupResult;
-        }
-        catch (Exception $e) {
-            report($e);
-            return $e;
-        }
-    }
-
     public function groups(Request $request){
         try {
             $groups = Manager::with(['groups'])->findOrFail($request->user()->counter);
             $groupResults = [];
             $groupsMap = $groups->groups
             ->filter(function($item, $key) {
-                Log::debug($item->group->business_id);
                 return intval($item->group->business_id) === 1;
             })
             ->mapToGroups(function ($item, $key) {
-                Log::debug($item);
                 return [$item->spisok_id =>  array('id' => $item->spisok_id, 'name' => $item->group->spisok_name, 'description' => $item->group->spisok_opisanie, 'valuation' => $item->group->spisok_ball)];
             });
-
             foreach($groupsMap as $group){
-                Log::debug($group);
                 $groupResults[] = ['id' => $group[0]['id'], 'name' => $group[0]['name'],  'description' => $group[0]['description'], 'valuation' => intval($group[0]['valuation']), 'count'=> count($group)];
             }
             return $groupResults;
-            $groupResult = collect($groupResults);
-            if ($request->get('sorted')) {
-                if($request->get('order')=='desc'){
-                    return $groupResult->sortByDesc($request->get('sorted'));
-                }
-                return $groupResult->sortBy($request->get('sorted'));
-            }
-            return $groupResult;
         }
         catch (Exception $e) {
             report($e);
             return $e;
         }
     }
+
     public function portfolio(Request $request) {
         $id = $request->user()->counter;
         return new PortfolioCollection(Customer::select(
@@ -159,9 +87,10 @@ class ManagerController extends Controller {
             $q->whereCounter($id);
         })->whereHas('managerPivot', function($q){
             $q->where('is_active', 1);
-        })->orderBy('priority', 'DESC')->paginate(150));
+        })->orderBy('priority', 'DESC')->paginate(25));
 
     }
+
     public function customersInGroup($group, Request $request){
         try {
             $id = $request->user()->counter;
@@ -193,7 +122,6 @@ class ManagerController extends Controller {
 
 
 
-
     public function create(Request $request) {
         try {
             $permission = Permission::create([
@@ -209,7 +137,7 @@ class ManagerController extends Controller {
     }
     // 7122
     // 7271
-    protected $fillable = ['spisok_id', 'client_id', 'add_uid', 'add_time', 'otrabotan_a_id'];
+    //protected $fillable = ['spisok_id', 'client_id', 'add_uid', 'add_time', 'otrabotan_a_id'];
 
     public function assetGroups(Request $request){
         for ($i = 4007134; $i <= 4007271; $i++) {

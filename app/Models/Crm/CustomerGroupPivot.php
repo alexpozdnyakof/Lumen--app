@@ -21,7 +21,7 @@ class CustomerGroupPivot extends Model
     protected $primaryKey = 'client_id';
     public $timestamps = false;
     protected $with = [
-        'group'
+        //'group'
     ];
     /**
      * @var array

@@ -24,7 +24,6 @@ class PortfolioResource extends JsonResource{
             'industry' => $this->okved_vid_deyatelnosti,
             'activity_last' => $this->posledniy_resultat_text,
             'activity_date' => $this->data_posledniy_contact_unixtime,
-            'groups' => $this->groups,
             'budget_period' => $this->vyruchka_period,
             'budget_year' => $this->vyruchka_za_god,
         ];
