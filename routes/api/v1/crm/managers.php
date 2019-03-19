@@ -7,7 +7,7 @@
     | Store here only crm routes routes just as lists/clients/prospects/activity etc.
     |
     */
-
+    
     $router->get('managers', ['uses' => 'Crm\ManagerController@index']);
     $router->post('managers', ['uses' => 'Crm\ManagerController@create']);
 

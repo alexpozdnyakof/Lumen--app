@@ -8,4 +8,5 @@
     |
     */
 
-	$router->post('getTable', ['uses' => 'Datatables\DatatableController@index']);
+    $router->post('getTable', ['uses' => 'Datatables\DatatableController@index']);
+    $router->post('parsetable', ['uses' => 'Datatables\DatatableController@parseTable']);

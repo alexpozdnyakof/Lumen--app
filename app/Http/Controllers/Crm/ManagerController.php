@@ -88,7 +88,6 @@ class ManagerController extends Controller {
         })->whereHas('managerPivot', function($q){
             $q->where('is_active', 1);
         })->orderBy('priority', 'DESC')->paginate(25));
-
     }
 
     public function customersInGroup($group, Request $request){

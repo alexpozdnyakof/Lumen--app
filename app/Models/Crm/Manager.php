@@ -37,59 +37,19 @@ class Manager extends Model
       'phone' => 'telefon'
    ];
 
-    // protected $fillable = ['id', 'name', 'v_shtate', 'glavnyi', 'email', 'user_role', 'rb'];
-
-   public function getChiefAttribute($value)
-   {
-      //return $this->hasOne(User::class, 'glavnyi', 'ФИО');
-       return $this->attributes['glavnyi'];
+   public function scopeWithoutTasks($query, int $user) {
+      return $query->whereDoesntHave('tasks', function($query) use($user){
+         $query->owner($user);
+      });
    }
 
-   public function getIdAttribute($value)
-   {
-      return $this->attributes['counter'];
+   public function scopeGroupState($query, string $state) {
+      return $state === 'complete' ? $query->whereNull('otrabotan_a_id') : $query->whereNotNull('otrabotan_a_id');
    }
-
-   public function getId() {
-      return $this->attributes['counter'];
-   }
-   public function getNameAttribute($value)
-   {
-      return $this->attributes['ФИО'];
-   }
-   public function getStateAttribute($value)
-   {
-      return $this->attributes['v_shtate'];
-   }
-   public function getCityAttribute($value)
-   {
-      return $this->attributes['nas_punkt'];
-   }
-
-   public function getPhotoAttribute($value)
-   {
-      return $this->attributes['avatar'];
-   }
-
-   public function getBranchcodeAttribute($value)
-   {
-      return $this->attributes['filial'];
-   }
-   public function getOfficeAttribute($value)
-   {
-      return $this->attributes['business_territory'];
-   }
-/*
-   public function chief() {
-      return User::class->where( 'ФИО', 'glavnyi')->findOrFail();
-      //return $this->hasOne(User::class, 'glavnyi', 'ФИО');
-   }
-*/
-
-    public function customers(){
+   public function customers(){
       return $this->belongsToMany(Customer::class, 'crm_client_managers', 'uid', 'client_id')->whereIs_active(1);
-    }
-    public function groups(){
+   }
+   public function groups(){
       return $this->belongsToMany(CustomerGroupPivot::class, 'crm_client_managers', 'uid', 'client_id', 'counter')->whereNull('otrabotan_a_id');
    }
    public function roles() {
@@ -101,6 +61,15 @@ class Manager extends Model
    public function tasksDone() {
       return $this->hasMany(Task::class, 'executor_uid',  'counter');
    }
+
 }
 
 
+   // ---- deprecated -----//
+   /*
+   public function lists(){
+      return $this->belongsToMany(CustomerGroup::class)
+      ->using(CustomerGroupPivot::class);
+      return $this->belongsToMany(CustomerGroupPivot::class, 'crm_client_managers', 'uid', 'client_id', 'counter')->whereNull('otrabotan_a_id');
+   }
+   */

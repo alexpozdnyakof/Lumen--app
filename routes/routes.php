@@ -8,13 +8,21 @@
 	$router->get('/', function () use ($router) {
 		return $router->app->version();
 	});
-
+	$router->get('/mail', function () use ($router) {
+		return view('mail');
+	});
+	$router->get('/calculator', function () use ($router) {
+		return view('calculator/index');
+	});
 	include_once 'api/v1/common/auth.php';
 	include_once 'api/v1/common/common.php';
 	include_once 'api/v1/products/tv.php';
 	include_once 'api/v1/schedules/schedules.php';
 
 	$router->group(['prefix' => 'api'], function () use ($router) {
+		$router->group(['prefix' => 'open'], function () use ($router) {
+			include_once 'api/open/routes.php';
+		});
 		$router->group(['middleware' => 'auth:api'], function($router){
 			$router->get('/user/current',  ['uses' => 'Permissions\UserController@currentUser']);
 	   });
@@ -29,6 +37,7 @@
 		});
 		/*---crm routes---------------------------------------*/
 		$router->group(['prefix' => 'crm'], function () use ($router) {
+			include_once 'api/v1/crm/workspace/workspace.php'; // routes for manager workspace content
 			include_once 'api/v1/crm/customers.php';
 			include_once 'api/v1/crm/managers.php';
 			include_once 'api/v1/crm/tasks.php';

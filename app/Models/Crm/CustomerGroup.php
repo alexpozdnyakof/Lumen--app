@@ -54,9 +54,46 @@ class CustomerGroup extends Model
         'is_visible'
     ];
 
-    public function customers() {
-        return $this->belongsToMany(Customer::class,'crm_spiski_clientov', 'spisok_id', 'client_id');
-     }
+    public function entrys(){
+        return $this->hasMany(CustomerGroupEntry::class, 'spisok_id', 'spisok_id');
+    }
 
-     
+    public function customers()
+    {
+      return $this->hasManyThrough(Customer::class, CustomerGroupEntry::class, 'spisok_id', 'client_id');
+    }
+
+    public function scopeMyCustomers($query, string $status, int $user) {
+        if($status === 'active'){
+            return $query->whereHas('customers', function($query) use($user) {
+                return $query->whereHas('managers', function($q) use($user){
+                    $q->where('counter', $user);
+                })->whereNull('otrabotan_a_id');
+            });
+        }
+        if($status === 'complete'){
+            return $query->whereHas('customers', function($query) use($user) {
+                return $query->whereHas('managers', function($q) use($user){
+                    $q->where('counter', $user);
+                })->whereNotNull('otrabotan_a_id');
+            });
+        }
+    }
+
+    public function scopeCountCustomers($query, string $status, int $user) {
+        if($status === 'active'){
+            return $query->withCount(['customers' => function($query) use($user){
+                return $query->whereHas('managers', function($q) use($user){
+                    $q->where('counter', $user);
+                })->whereNull('otrabotan_a_id');
+            }]);
+        }
+        if($status === 'complete'){
+            return $query->withCount(['customers' => function($query) use($user){
+                return $query->whereHas('managers', function($q) use($user){
+                    $q->where('counter', $user);
+                })->whereNotNull('otrabotan_a_id');
+            }]);
+        }
+    }
 }

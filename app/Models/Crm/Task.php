@@ -3,6 +3,7 @@
 namespace App\Models\Crm;
 
 use Illuminate\Database\Eloquent\Model;
+use DateTime;
 
 /**
  * @property int $a_id
@@ -33,14 +34,15 @@ class Task extends Model
      * @var string
      */
     protected $table = 'crm_activity';
-
+    //protected $dates = ['created_server_unixtime', 'act_start_time'];
+   
     /**
      * The primary key for the model.
      * 
      * @var string
      */
     protected $primaryKey = 'a_id';
-
+   
     /**
      * @var array
      */
@@ -67,6 +69,11 @@ class Task extends Model
         'act_result_next_etap',
     ];
 
+    public $timestamps = false;
+
+    const CREATED_AT = 'created_server_unixtime';
+   // const UPDATED_AT = 'act_start_time';
+    protected $dateFormat = 'U';
     public function manager() {
         return $this->hasOne(Manager::class, 'counter', 'executor_uid' );
     }
@@ -87,4 +94,55 @@ class Task extends Model
        return $this->attributes['act_type'];
     }
 
+
+    public function scopeStatus($query, string $status) {
+        $now = new DateTime();
+        switch($status) {
+            case 'completed':
+                return $query->whereNotNull('act_result');
+            case 'planned':
+                return $query->whereNull('act_result')->where('act_start_time', '>', $now->getTimestamp());
+            case 'duedate':
+                return $query->whereNull('act_result')->where('act_start_time', '<', $now->getTimestamp());
+        }
+    }
+
+    public function scopeOwner($query, int $user) {
+        return $query->where('executor_uid', $user)->orWhere('creator_uid', $user);
+     }
+
+    public function scopeWithAuthor($query) {
+        return $query->with([
+            'author' => function($q) {
+                $q->select('counter', 'ФИО');
+            }
+        ]);
+    }
+     public function scopeWithCustomer($query) {
+        return $query->with([
+            'customer' => function($q) {
+                $q->select('client_id', 'name', 'priority');
+            }
+        ]);
+     }
+
+     public function scopeListView($query) {
+        return $query->with([
+            'author' => function($q) {
+                $q->select('counter', 'ФИО');
+            },
+            'customer' => function($q) {
+                $q->select('client_id', 'name', 'priority');
+            }
+        ]);
+    }
+
+     public function scopeHasCustomer($query, $customerId) {
+        return $query->whereHas('customer', function($query) use($customerId){
+            $query->where('client_id', $customerId);
+        });
+     }
+     public function scopeType($query) {
+        return $query->with(['type']);
+     }
 }

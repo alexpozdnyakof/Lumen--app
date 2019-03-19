@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Crm\Portfolio; // setting up namespace for auto discover
 use Illuminate\Http\Resources\Json\JsonResource; // resource json helper
 use Illuminate\Support\Facades\Log;
+use App\Http\Resources\Crm\Task\TaskResource;
 
 
 class PortfolioResource extends JsonResource{
@@ -18,36 +19,19 @@ class PortfolioResource extends JsonResource{
         return [
             'id' => $this->client_id,
             'valuation' => $this->priority,
-            'bank_pro' => $this->current_bank,
-            'bank_payroll' => $this->current_payroll_bank,
             'name' => $this->name,
             'industry' => $this->okved_vid_deyatelnosti,
-            'activity_last' => $this->posledniy_resultat_text,
-            'activity_date' => $this->data_posledniy_contact_unixtime,
-            'budget_period' => $this->vyruchka_period,
-            'budget_year' => $this->vyruchka_za_god,
+            'activity' => [
+                'result' => $this->posledniy_resultat_text,
+                'date' => $this->data_posledniy_contact_unixtime,
+            ],
+            'money' => [
+                'period' => $this->vyruchka_period,
+                'amount' => $this->vyruchka_za_god,
+            ],
+            'lastTask' => new TaskResource($this->tasks),
         ];
     }
-/*
-    public static function collection($resource)
-    {   $collectionArray = parent::collection($resource) -> toArray();
-        $collection = parent::collection($collectionArray['data'])->collection;
-        if ($collection->count() > 1) {
-            return [Str::plural(self::$wrap) => $collection];
-        }
-        // This is according to API specs, but Postman collection gives an error:
-        return [self::$wrap => $collection->first()];
-    }
-*/
-            /*
-    'data' => $this->collection,
-    'pagination' => [
-        'total' => $this->total(),
-        'count' => $this->count(),
-        'per_page' => $this->perPage(),
-        'current_page' => $this->currentPage(),
-        'total_pages' => $this->lastPage()
-*/
 }
 
 

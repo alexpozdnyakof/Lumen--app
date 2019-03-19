@@ -16,6 +16,9 @@ class Code extends Model
      * 
      * @var string
      */
+    protected $with = [
+        //'activated'
+    ];
     protected $table = 'amulex_codes';
  public $timestamps = false;
     /**
@@ -34,8 +37,8 @@ class Code extends Model
         return $this->belongsTo(Certs::class, 'type', 'id');
        // return $this->belongsTo(Certs::class, 'type', 'id');
     }
-    public function store(){
-        return $this->belongsTo(CertsStore::class, 'activated', 'id');
+    public function activated(){
+        return $this->belongsTo(Activated::class, 'activated', 'id')->select('id');
 
        // return $this->belongsTo(CertsStore::class, 'activated', 'id');
     }

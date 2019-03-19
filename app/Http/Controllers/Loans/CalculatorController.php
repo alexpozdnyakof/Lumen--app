@@ -2,53 +2,73 @@
 
 namespace App\Http\Controllers\Loans;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Loans\_CalculatorBaseController;
 
 // internal models
-use App\Models\Products\Loans\LoanScore;
+use App\Models\Products\Loans\CalculateHistory;
+
 use App\Models\Datatable\TableCell;
 // internal extended
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use App\Http\Resources\Loans\Calculator\Ranges as RangeResource;
-use App\Http\Resources\Loans\Calculator\Keys as KeyResource;
 
 
 
 
 
-class CalculatorController extends Controller {
-    public function __construct(){ }
-    // ----- get inital keys --------//
-    public function keys() {
-        return response()->json(KeyResource::collection(LoanScore::where('collateral', '!=', 'Opex')->orderBy('created_at', 'asc')->take(5)->get()));
-    }
-    // ----- get inital ranges --------//
-    public function ranges(){
-        return response()->json(RangeResource::collection(TableCell::whereType(1)->where('value', '!=', 'овердрафт')->take(59)->get()));
-    }
-    // ----- calculate score --------//
-    public function calculate(Request $request) {
-        $scores = LoanScore::whereCollateral($request->input('collateral'))->latest()->select($request->input('segment'))->firstOrFail();
-        $opex = LoanScore::whereCollateral('Opex')->latest()->select($request->input('segment'))->firstOrFail();
-        $row = TableCell::whereType(1)->whereValue($request->input('range'))->select('row')->latest()->firstOrFail();
-        $cof = TableCell::whereType(2)->whereRow($row['row'])->select('value')->latest()->firstOrFail();
-        $cof = str_replace('%', '', $cof['value']);
-        $cof = str_replace(',', '.', $cof);
-        $opex = str_replace(',', '.', $opex[$request->input('segment')]);
-        $scores = str_replace(',', '.', $scores[$request->input('segment')]);
-        $result = floatval($scores) * 100 + floatval($opex) * 100 + floatval($cof);
-        return response()->json([
-            'collateral' => $request->input('collateral'),
-            'segment' => $request->input('segment'),
-            'range' => $request->input('range'),
-            'type' => $request->input('type'),
-            'score' => round($result, 2)
-        ]);
+
+class CalculatorController extends _CalculatorBaseController {
+
+    public function __construct(){
+        parent::__construct();
     }
 
+
+    public function index(Request $request) {
+       $config = json_decode($request->input('config'));
+       if($config->type === 'overdraft') {
+        $gross = $this->_getOverdraftGross($config->segment, $config->collateral);
+       }
+       if($config->type === 'credit') {
+            $gross = $this->_getCreditGross($config->range, $config->segment, $config->collateral,  $config->amount);
+       }
+       $ftp = $this->_getFtp($config->range, $config->isPrevious, $isOverdraft = $config->type === 'overdraft' ? true : false);
+        return response()->json(
+            ['ftp' => $ftp, 'gross' => $gross]
+        );
+    }
+    // ----- get update dates --------//
+    public function latestScoreUpdate(){
+        return response()->json(['lastVersion' => $this->lastDate, 'prevVersion' =>  $this->prevDate]);
+    }
+    // ----- save calculate result --------//
+    public function saveResult(Request $request) {
+        $result = json_decode($request->input('result'));
+        $calculatorResult =  CalculateHistory::create(
+            [
+                'ftp' => $result->ftp,
+                'gross' => $result->gross,
+                'decent' => $result->decent,
+                'result' => $result->result,
+                'date' => Carbon::now(),
+                'managerid' => $result->id,
+                'type' => $result->type,
+                'note' => $result->note,
+                'managername' => $result->managerName
+            ]
+        );
+        return response()->json($calculatorResult);
+    }
+
+    public function getCalculateHistory($id) {
+        return response()->json(CalculateHistory::whereManagerid($id)->orderBy('date', 'desc')->get());
+    }
+
+    public function getOneCalculateHistory($id) {
+        $data = CalculateHistory::findOrFail($id);
+        return view('calculator', ['data'=>$data]);
+    }
 }
 
 

@@ -125,60 +125,58 @@ class DatatableController extends Controller {
         $count = $this->countRows(1);
         $dataRequest = $request->input('data');
         $data = json_decode($dataRequest);
-        Log::debug('data');
-        Log::debug(gettype($data));
+        $startDate = $request->input('startDate');
         for($e = 0; $e < count($data); $e++){
-            Log::debug($data);
            // return response()->json($row->id);
            $row = TableRow::create([
             'table' => 1,
-            'created_at' => Carbon::now()
-        ]);
+            'created_at' => $startDate
+            ]);
        // return response()->json($row->id);
         $cell = TableCell::create([
             'value' => $data[$e]->range,
-            'created_at' => Carbon::now(),
+            'created_at' => $startDate,
             'type' => 1,
             'row' =>  $row->id,
         ]);
         $cell = TableCell::create([
             'value' => $data[$e]->rates->rub,
-            'created_at' => Carbon::now(),
+            'created_at' => $startDate,
             'type' => 2,
             'row' =>  $row->id,
         ]);
         $cell = TableCell::create([
             'value' => $data[$e]->rates->eur,
-            'created_at' => Carbon::now(),
+            'created_at' => $startDate,
             'type' => 3,
             'row' =>  $row->id,
         ]);
         $cell = TableCell::create([
             'value' => $data[$e]->rates->usd,
-            'created_at' => Carbon::now(),
+            'created_at' => $startDate,
             'type' => 4,
             'row' =>  $row->id,
         ]);
         $cell = TableCell::create([
             'value' => $data[$e]->risk->rub,
-            'created_at' => Carbon::now(),
+            'created_at' => $startDate,
             'type' => 5,
             'row' =>  $row->id,
         ]);
         $cell = TableCell::create([
             'value' => $data[$e]->risk->eur,
-            'created_at' => Carbon::now(),
+            'created_at' => $startDate,
             'type' => 6,
             'row' =>  $row->id,
         ]);
         $cell = TableCell::create([
             'value' => $data[$e]->risk->usd,
-            'created_at' => Carbon::now(),
+            'created_at' => $startDate,
             'type' => 7,
             'row' =>  $row->id,
         ]);
         }
-        return response()->json($data);
+        return response()->json('Ставки успешно обновлены', 200);
     }
 
 }

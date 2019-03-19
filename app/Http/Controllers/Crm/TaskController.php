@@ -1,18 +1,15 @@
 <?php
 namespace App\Http\Controllers\Crm;
 use App\Http\Controllers\Controller;
+use Auth;
 
 // internal models
 use App\Models\Crm\Task;
-use App\Models\Crm\TaskType;
-use App\Models\Crm\Customer;
-use App\Models\Crm\Manager;
 // internal extended
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Log;
-use App\Http\Resources\Crm\Task\TaskResource;
+use App\Http\Resources\Crm\Workspace\TaskResource;
 
 
 
@@ -20,165 +17,92 @@ use App\Http\Resources\Crm\Task\TaskResource;
 
 
 class TaskController extends Controller {
-    public function __construct()
+    protected $user;
+    protected $statusList = ['completed', 'planned', 'duedate'];
+    protected $status;
+    public function __construct(Request $request)
     {
-
+        $this->middleware('auth');
+        $this->user = $request->user() ? $request->user()->counter : null;
+        $this->status =  $request->input('status') ? $request->input('status'): null;
     }
-    public function index($id, Request $request){
+    //---- Get tasks with params ----/
+    public function index(Request $request){
         try {
-            $managerId = 2;
-            return response()->json(Task::with(['type'])->where('client_id', $id)->get());
-            return response()->json(Task::where('executor_uid', $id)->get());
-
-            return response()->json(Manager::with(['tasks' => function($query) use ($managerId) {
-                $query->where('executor_uid', $managerId);
-            },])->get());
-
-            return response()->json(Task::with(['type', 'manager', 'customer'])->findOrFail($id));
-            //return response()->json(Task::with(['type, manager, customer'])->findOrFail($id));
-        }
-        catch (Exception $e) {
-            report($e);
-            return $e;
-        }
-    }
-
-    public function tasksUser($user = NULL, Request $request) {
-        try {
-            if( is_null($user) ) {
-                $user = $request->user()->counter;
+            if($this->status) {
+                $tasks = $this->_tasksWithStatus($this->status,  $this->user);
+                return response()->json(TaskResource::collection($tasks->withCustomer()->type()->orderBy('act_start_time', 'DESC')->get()));
             }
-            $tasks = Task::where('executor_uid', $user)->whereNull('act_id')->with([
-                'customer' => function($q) {
-                    $q->select('client_id', 'name', 'priority');
-                },
-                'author' => function($q) {
-                    $q->select('counter', 'ФИО');
-                },
-            ])->orderBy('act_start_time', 'DESC')->get();
-            return response()->json($this->_groupTasks($tasks));
+            return response()->json($this->_allTasks($this->user));
         } catch (Exception $e) {
             report($e);
             return $e;
         }
     }
 
-/*
-    public function tasksCustomer($customerId, Request $request) {
+    public function customer($customerId){
         try {
-            $tasks = Task::where('client_id', $customerId)->orderBy('act_start_time', 'DESC')->get();
-            return response()->json($this->_groupTasks($tasks));
-        } catch (Exception $e) {
-            report($e);
-            return $e;
-        }
-    }
-*/
 
-public function tasksCustomer($id, Request $request) {
-    try {
-        $tasks = Task::where('client_id', $id)->orderBy('act_start_time', 'DESC')->get();
-        return response()->json($this->_groupTasks($tasks));
-    } catch (Exception $e) {
-        report($e);
-        return $e;
-    }
-}
-
-
-    public function tasksCustomer__backup($customerId, $managerId = NULL, Request $request) {
-        try {
-            if( is_null($managerId) ) {
-                $managerId = $request->user()->counter;
-            }
-            $tasks = Task::where('client_id', $customerId)->orderBy('act_start_time', 'DESC')->get();
-            return response()->json($this->_groupTasks($tasks));
+            return TaskResource::collection(Task::hasCustomer($customerId)->orderBy('act_start_time', 'DESC')->get());
+            // return taskowner collection
         } catch (Exception $e) {
             report($e);
             return $e;
         }
     }
 
-    public function customerWithTask($customerId, $managerId = NULL, Request $request) {
-        try {
-            if( is_null($managerId) ) {
-                $managerId = $request->user()->counter;
-            }
-            return response()->json(Customer::with(['tasks' => function($query) {
-                $query->orderBy('act_start_time', 'DESC');
-            }])->get($customerId));
-        } catch (Exception $e) {
-            report($e);
-            return $e;
-        }
+// move it to parent task controller and make store action with result response
+    public function store(Request $request){
+        $task = json_decode($request->input('task'));
+        return response()->json($task->customer);
+        //['departure' => 'Oakland', 'destination' => 'San Diego'],
+        // post request
+        // create  task 
     }
 
-    private function _groupTasks($tasks) {
-        $progress = $tasks->filter(function($item, $key) {
-            return $item->act_id == NULL;
-        });
+    public function show($id){
+        //return Task::listView()->findOrFail($id);
+        return new TaskResource(Task::listView()->findOrFail($id));
+        // move to  parent taskcontroller
+        // findOne
+        //return resource
+        // post request
+        // show one task 
+    }
 
-        $completed = $tasks->diff($progress);
+    public function update($id, Request $request){
+        // completeOne
+        // put request
+        //only if 
+    }
+    public function destroy($id, Request $request){
+        // completeOne
+        // put request
+    }
 
-        $duedate = $progress->filter(function($item, $key) {
-            return Carbon::now()->greaterThan(Carbon::createFromTimestamp($item->act_start_time));
-        });
-        return [
-            'duedate' => TaskResource::collection($duedate), 
-            'planned' => TaskResource::collection($progress->diff($duedate)),
-            'completed' => TaskResource::collection($completed),
+
+    protected function _allTasks($user) {
+        $completed = $this->_tasksWithStatus($this->statusList[0], $user);
+        $planned = $this->_tasksWithStatus($this->statusList[1], $user);
+        $duedate = $this->_tasksWithStatus($this->statusList[2], $user);
+
+        $allTasks=[
+            'completed' => TaskResource::collection($completed->withCustomer()->type()->orderBy('act_start_time', 'DESC')->take(10)->get()),
+            'planned' => TaskResource::collection($planned->withCustomer()->type()->orderBy('act_start_time', 'DESC')->get()),
+            'duedate' => TaskResource::collection($duedate->withCustomer()->type()->orderBy('act_start_time', 'DESC')->get()),
         ];
-        //ordered by asc
+        return $allTasks;
     }
 
-    private function _compareDate($date) {
-        return Carbon::now()->greaterThan(Carbon::createFromTimestamp($date));
+    protected function _validateStatus($status){
+        if(!in_array($status, $this->statusList)) {return;}
+        return true;
     }
 
-    public function tasksDev(Request $request) {
-        return response()->json(Task::where('executor_uid', $request->user()->counter)->whereNull('act_id')->orderBy('act_start_time', 'DESC')->count());
+    protected function _tasksWithStatus($status, $user) {
+        if(!$this->_validateStatus($status)){}
+            return Task::owner($user)->status($status);
     }
-
-    // 1 где не налл акт айди и act_start_time прошло
-    // 2 где не налл и act_start_time по убыванию
-    // 3 где налл и act_start_time по убыванию
-
-    // для кастомера сортируем по act_start_time в обратном порядке наверху последняя
-
-    public function get(Request $request){
-        try {
-            $permissions = Permission::all()->get();
-            return response()->json($permissions);
-        }
-        catch (Exception $e) {
-            report($e);
-            return $e;
-        }
-    }
-    public function findOne($id, Request $request){
-        try {
-            $permission = Permission::findOrFail($id);
-            return response()->json($permission);
-        }
-        catch (Exception $e) {
-            report($e);
-            return $e;
-        }
-    }
-    public function create(Request $request) {
-        try {
-            $permission = Permission::create([
-            'name' => $request->input('name'),
-            'slug' => $request->input('slug'),
-            ]);
-            return  response()->json($permission);
-        }
-        catch (Exception $e) {
-            report($e);
-            return $e;
-        }
-    }
-
 }
 
 
